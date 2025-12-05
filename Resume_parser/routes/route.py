@@ -163,32 +163,38 @@ async def chat(req: ChatRequest):
                 raise
         responder = genai.GenerativeModel(GEMINI_MODEL)
         prompt = (
-            "Chat with the user and suggest concrete job leads. Be concise and friendly.\n"
+            "Chat with the user and suggest concrete job leads based on skills and search results. Be concise and friendly.\n"
             f"User message: {req.message}\n"
             f"User skills: {json.dumps(LAST_SKILLS)}\n"
-            f"Search results: {json.dumps(sr) if sr is not None else 'unavailable'}\n\n"
-            "Return JSON only with: {\"text\": string, \"recommendations\": [{title, company?, link?, reason}]}."
-            "Ensure recommendations is a list of 5 items and keep reasons short."
+            f"Search results JSON: {json.dumps(sr) if sr is not None else 'unavailable'}\n\n"
+            "The search results contain items with fields like title, url, content, and source.\n"
+            "For each suggested job, use the actual posting/company/careers URL from the search results item (prefer item.url). Do NOT invent or use example links.\n"
+            "Reply in plain text only. Do not use markdown, bullets, JSON, or extra commentary.\n"
+            "Output a numbered list of up to 5 items. For each item, write exactly these four lines and nothing else:\n\n"
+            "1. Job Title\n"
+            "   Location: City / Remote\n"
+            "   Link: <actual URL from search results item.url>\n"
+            "   Info: Short capability description.\n\n"
+            "Do not include any text before or after the list."
         )
         resp = responder.generate_content(prompt)
-        try:
-            out = json.loads(resp.text)
-        except Exception:
-            out = {"text": resp.text}
+        out = {"text": resp.text}
     else:
         direct = genai.GenerativeModel(GEMINI_MODEL)
         prompt = (
-            "Reply helpfully to the user about job search based on their skills.\n"
+            "Suggest suitable job roles based on the user's skills. Be concise and friendly.\n"
             f"User message: {req.message}\n"
             f"User skills: {json.dumps(LAST_SKILLS)}\n\n"
-            "Return JSON only with: {\"text\": string, \"recommendations\": [{title, company?, link?, reason}]}."
-            "Ensure recommendations is a list of up to 5 items and keep reasons short."
+            "Reply in plain text only. Do not use markdown, bullets, JSON, or extra commentary.\n"
+            "Output a numbered list of up to 5 items. For each item, write exactly these four lines and nothing else:\n\n"
+            "1. Job Title\n"
+            "   Location: City / Remote\n"
+            "   Link: <actual URL to a relevant job board or company careers page>\n"
+            "   Info: Short capability description.\n\n"
+            "Do not include any text before or after the list."
         )
         dresp = direct.generate_content(prompt)
-        try:
-            out = json.loads(dresp.text)
-        except Exception:
-            out = {"text": dresp.text}
+        out = {"text": dresp.text}
 
     history.append({"role": "user", "content": req.message})
     history.append({"role": "assistant", "content": out.get("text", "")})

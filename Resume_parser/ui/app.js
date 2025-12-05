@@ -30,7 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function addBubble(text, who='ai'){
     const b = document.createElement('div');
     b.className = 'bubble ' + (who==='user'?'user':'ai');
-    b.textContent = text;
+    // Preserve line breaks and make plain URLs clickable without altering spacing
+    const withLinks = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noreferrer noopener">$1</a>');
+    b.innerHTML = withLinks;
     chatLog.appendChild(b);
     chatLog.scrollTop = chatLog.scrollHeight;
   }
